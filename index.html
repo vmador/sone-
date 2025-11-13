@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sone™</title>
+    <meta name="description" content="Music Matters">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/sone-/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/sone-/icon-512x512.png">
+    <link rel="apple-touch-icon" href="/sone-/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Sone™">
+    <meta property="og:title" content="Sone™">
+    <meta property="og:description" content="Music Matters">
+    <meta property="og:image" content="/sone-/social-preview.png">
+    <meta property="og:url" content="https://soneapp.framer.website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sone™">
+    <meta name="twitter:description" content="Music Matters">
+    <meta name="twitter:image" content="/sone-/social-preview.png">
+    
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: #000000; 
+        }
+        iframe { 
+            width: 100lvw; 
+            height: 100lvh; 
+            border: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+        }
+        
+        /* Full Screen Mode (Redpills style) */
+        @supports (-webkit-touch-callout: none) {
+            @media not all and (display-mode: standalone) {
+                iframe { height: 100dvh; }
+            }
+        }
+        @supports (-webkit-touch-callout: none) {
+            html, body, iframe {
+                height: 100vh !important;
+                max-height: 100vh !important;
+                min-height: 100vh !important;
+                overflow: hidden !important;
+            }
+        }
+        
+        
+    </style>
+</head>
+<body>
+    <iframe id="framerContent" src="https://soneapp.framer.website/" allowfullscreen allow="geolocation; camera; microphone; storage-access"></iframe>
+    
+    
+    <script>
+    function sendMessageToIframe(message) {
+        const iframe = document.getElementById('framerContent');
+        iframe.contentWindow.postMessage(message, 'https://soneapp.framer.website/');
+    }
+    
+    window.addEventListener('message', function(event) {
+        if (event.origin !== "https://soneapp.framer.website/") return;
+        
+        if (event.data.type === 'setSessionData') {
+            localStorage.setItem('sessionData', JSON.stringify(event.data.sessionData));
+        } else if (event.data.type === 'getSessionData') {
+            const sessionData = localStorage.getItem('sessionData');
+            sendMessageToIframe({
+                type: 'sessionDataResponse',
+                sessionData: sessionData ? JSON.parse(sessionData) : null
+            });
+        }
+    }, false);
+
+    window.addEventListener('load', function() {
+        const sessionData = localStorage.getItem('sessionData');
+        if (sessionData) {
+            sendMessageToIframe({
+                type: 'restoreSession',
+                sessionData: JSON.parse(sessionData)
+            });
+        }
+    });
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            const sessionData = localStorage.getItem('sessionData');
+            if (sessionData) {
+                sendMessageToIframe({
+                    type: 'restoreSession',
+                    sessionData: JSON.parse(sessionData)
+                });
+            }
+        }
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sone-/service-worker.js').then(function(registration) {
+                // Registration successful
+            }, function(err) {
+                // Registration failed
+            });
+        });
+    }
+
+    
+    // Dynamic viewport adjustment for dvh units
+    function updateViewportHeight() {
+        document.documentElement.style.setProperty('--dvh', window.innerHeight + 'px');
+    }
+
+    if ('lvh' === 'dvh') {
+        // Set initial value
+        updateViewportHeight();
+        
+        // Update on resize or orientation change
+        window.addEventListener('resize', updateViewportHeight);
+        window.addEventListener('orientationchange', updateViewportHeight);
+    }
+    
+    </script>
+</body>
+</html>
